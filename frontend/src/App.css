@@ -1,34 +1,61 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.metric-value {
+  font-family: 'IBM Plex Mono', monospace;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.table-number {
+  font-family: 'IBM Plex Mono', monospace;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.btn-primary {
+  background-color: #183623;
+  color: white;
+  border: none;
+  box-shadow: 4px 4px 0px #D9D7CE;
+  transition: transform 150ms ease-out, box-shadow 150ms ease-out;
 }
 
-.App-link {
-    color: #61dafb;
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 2px 2px 0px #D9D7CE;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 1px 1px 0px #D9D7CE;
+}
+
+.card-border {
+  border: 1px solid #D9D7CE;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.input-botanical {
+  border: 1px solid #D9D7CE;
+  border-radius: 0;
+  background: transparent;
+  transition: border-color 150ms ease-out;
+}
+
+.input-botanical:focus {
+  outline: none;
+  border-color: #183623;
+  border-bottom-width: 2px;
+  box-shadow: none;
+}
+
+.file-upload-zone {
+  border: 1px dashed #183623;
+  background-color: #F5F5F1;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.file-upload-zone:hover {
+  background-color: #EBEBE6;
+}
+
+.recharts-wrapper {
+  font-family: 'IBM Plex Mono', monospace;
 }
