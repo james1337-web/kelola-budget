@@ -325,11 +325,14 @@ function App() {
     }
   };
 
-  const currentDivisionStats = dashboardStats.divisions.find(d => d.divisi === activeTab) || {
+  const currentDivisionStats =
+  (dashboardStats?.divisions || []).find(
+    d => d.divisi === activeTab
+  ) || {
     budget_awal: 0,
     total_pengeluaran: 0,
     saldo_tersisa: 0,
-    persentase_terpakai: 0
+    persentase_terpakai: 0,
   };
 
   return (
