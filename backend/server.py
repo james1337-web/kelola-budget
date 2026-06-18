@@ -13,13 +13,11 @@ from datetime import datetime, timezone
 import requests
 from io import BytesIO
 import openpyxl
-from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import mm
 
 ROOT_DIR = Path(__file__).parent
@@ -78,19 +76,22 @@ def get_object(path: str) -> tuple:
     return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 # Models
-class Budget(BaseModel):
+class DivisionBudget(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    divisi: str
     amount: float
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class BudgetCreate(BaseModel):
+class DivisionBudgetCreate(BaseModel):
+    divisi: str
     amount: float
 
 class Expense(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    divisi: str
     tanggal: str
     nominal: float
     kategori: str
@@ -102,6 +103,7 @@ class Expense(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ExpenseCreate(BaseModel):
+    divisi: str
     tanggal: str
     nominal: float
     kategori: str
@@ -115,11 +117,18 @@ class ExpenseUpdate(BaseModel):
     kategori: Optional[str] = None
     keterangan: Optional[str] = None
 
-class DashboardStats(BaseModel):
+class DivisionStats(BaseModel):
+    divisi: str
     budget_awal: float
     total_pengeluaran: float
     saldo_tersisa: float
     persentase_terpakai: float
+
+class DashboardStats(BaseModel):
+    total_budget: float
+    total_pengeluaran: float
+    total_saldo: float
+    divisions: List[DivisionStats]
 
 class MonthlyExpense(BaseModel):
     bulan: str
@@ -136,48 +145,56 @@ class StatsResponse(BaseModel):
 # API Endpoints
 @api_router.get("/")
 async def root():
-    return {"message": "Budget App API"}
+    return {"message": "Budget App API - Multi Division"}
 
-@api_router.post("/budget", response_model=Budget)
-async def create_or_update_budget(input: BudgetCreate):
-    existing = await db.budgets.find_one({}, {"_id": 0})
+@api_router.post("/budgets", response_model=DivisionBudget)
+async def create_or_update_budget(input: DivisionBudgetCreate):
+    if input.amount < 0:
+        raise HTTPException(status_code=400, detail="Budget tidak boleh negatif")
+    
+    existing = await db.division_budgets.find_one({"divisi": input.divisi}, {"_id": 0})
     
     if existing:
         update_data = {
             "amount": input.amount,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
-        await db.budgets.update_one({"id": existing["id"]}, {"$set": update_data})
-        updated = await db.budgets.find_one({"id": existing["id"]}, {"_id": 0})
+        await db.division_budgets.update_one({"id": existing["id"]}, {"$set": update_data})
+        updated = await db.division_budgets.find_one({"id": existing["id"]}, {"_id": 0})
         if isinstance(updated['created_at'], str):
             updated['created_at'] = datetime.fromisoformat(updated['created_at'])
         if isinstance(updated['updated_at'], str):
             updated['updated_at'] = datetime.fromisoformat(updated['updated_at'])
-        return Budget(**updated)
+        return DivisionBudget(**updated)
     else:
-        budget_obj = Budget(amount=input.amount)
+        budget_obj = DivisionBudget(divisi=input.divisi, amount=input.amount)
         doc = budget_obj.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
-        await db.budgets.insert_one(doc)
+        await db.division_budgets.insert_one(doc)
         return budget_obj
 
-@api_router.get("/budget", response_model=Budget)
-async def get_budget():
-    budget = await db.budgets.find_one({}, {"_id": 0})
+@api_router.get("/budgets/{divisi}", response_model=DivisionBudget)
+async def get_division_budget(divisi: str):
+    budget = await db.division_budgets.find_one({"divisi": divisi}, {"_id": 0})
     if not budget:
-        default_budget = Budget(amount=0)
-        doc = default_budget.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        doc['updated_at'] = doc['updated_at'].isoformat()
-        await db.budgets.insert_one(doc)
-        return default_budget
+        return DivisionBudget(divisi=divisi, amount=0)
     
     if isinstance(budget['created_at'], str):
         budget['created_at'] = datetime.fromisoformat(budget['created_at'])
     if isinstance(budget['updated_at'], str):
         budget['updated_at'] = datetime.fromisoformat(budget['updated_at'])
-    return Budget(**budget)
+    return DivisionBudget(**budget)
+
+@api_router.get("/budgets", response_model=List[DivisionBudget])
+async def get_all_budgets():
+    budgets = await db.division_budgets.find({}, {"_id": 0}).to_list(100)
+    for budget in budgets:
+        if isinstance(budget['created_at'], str):
+            budget['created_at'] = datetime.fromisoformat(budget['created_at'])
+        if isinstance(budget['updated_at'], str):
+            budget['updated_at'] = datetime.fromisoformat(budget['updated_at'])
+    return budgets
 
 @api_router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -207,6 +224,8 @@ async def download_file(path: str):
 
 @api_router.post("/expenses", response_model=Expense)
 async def create_expense(input: ExpenseCreate):
+    if input.nominal <= 0:
+        raise HTTPException(status_code=400, detail="Nominal harus lebih dari 0")
     expense_obj = Expense(**input.model_dump())
     doc = expense_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -215,8 +234,11 @@ async def create_expense(input: ExpenseCreate):
     return expense_obj
 
 @api_router.get("/expenses", response_model=List[Expense])
-async def get_expenses():
-    expenses = await db.expenses.find({"is_deleted": False}, {"_id": 0}).to_list(1000)
+async def get_expenses(divisi: Optional[str] = None):
+    query = {"is_deleted": False}
+    if divisi:
+        query["divisi"] = divisi
+    expenses = await db.expenses.find(query, {"_id": 0}).to_list(1000)
     for expense in expenses:
         if isinstance(expense['created_at'], str):
             expense['created_at'] = datetime.fromisoformat(expense['created_at'])
@@ -231,6 +253,8 @@ async def update_expense(expense_id: str, input: ExpenseUpdate):
         raise HTTPException(status_code=404, detail="Expense not found")
     
     update_data = {k: v for k, v in input.model_dump().items() if v is not None}
+    if "nominal" in update_data and update_data["nominal"] <= 0:
+        raise HTTPException(status_code=400, detail="Nominal harus lebih dari 0")
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
     await db.expenses.update_one({"id": expense_id}, {"$set": update_data})
@@ -254,25 +278,44 @@ async def delete_expense(expense_id: str):
 
 @api_router.get("/dashboard/stats", response_model=DashboardStats)
 async def get_dashboard_stats():
-    budget = await db.budgets.find_one({}, {"_id": 0})
-    budget_awal = budget["amount"] if budget else 0
-    
+    budgets = await db.division_budgets.find({}, {"_id": 0}).to_list(100)
     expenses = await db.expenses.find({"is_deleted": False}, {"_id": 0}).to_list(1000)
-    total_pengeluaran = sum(exp["nominal"] for exp in expenses)
     
-    saldo_tersisa = budget_awal - total_pengeluaran
-    persentase_terpakai = (total_pengeluaran / budget_awal * 100) if budget_awal > 0 else 0
+    divisions_stats = []
+    total_budget = 0
+    total_pengeluaran = 0
+    
+    for divisi_name in ["REGIS", "BLAST", "SEO"]:
+        budget = next((b for b in budgets if b["divisi"] == divisi_name), None)
+        budget_awal = budget["amount"] if budget else 0
+        
+        divisi_expenses = [e for e in expenses if e["divisi"] == divisi_name]
+        divisi_total = sum(exp["nominal"] for exp in divisi_expenses)
+        
+        saldo_tersisa = budget_awal - divisi_total
+        persentase_terpakai = (divisi_total / budget_awal * 100) if budget_awal > 0 else 0
+        
+        divisions_stats.append(DivisionStats(
+            divisi=divisi_name,
+            budget_awal=budget_awal,
+            total_pengeluaran=divisi_total,
+            saldo_tersisa=saldo_tersisa,
+            persentase_terpakai=persentase_terpakai
+        ))
+        
+        total_budget += budget_awal
+        total_pengeluaran += divisi_total
     
     return DashboardStats(
-        budget_awal=budget_awal,
+        total_budget=total_budget,
         total_pengeluaran=total_pengeluaran,
-        saldo_tersisa=saldo_tersisa,
-        persentase_terpakai=persentase_terpakai
+        total_saldo=total_budget - total_pengeluaran,
+        divisions=divisions_stats
     )
 
-@api_router.get("/expenses/stats", response_model=StatsResponse)
-async def get_expense_stats():
-    expenses = await db.expenses.find({"is_deleted": False}, {"_id": 0}).to_list(1000)
+@api_router.get("/expenses/stats/{divisi}", response_model=StatsResponse)
+async def get_expense_stats(divisi: str):
+    expenses = await db.expenses.find({"divisi": divisi, "is_deleted": False}, {"_id": 0}).to_list(1000)
     
     # Monthly stats
     monthly_data = {}
@@ -297,56 +340,62 @@ async def get_expense_stats():
     
     return StatsResponse(monthly=monthly, by_category=by_category)
 
-@api_router.get("/export/excel")
-async def export_excel():
-    expenses = await db.expenses.find({"is_deleted": False}, {"_id": 0}).to_list(1000)
-    budget = await db.budgets.find_one({}, {"_id": 0})
+@api_router.get("/export/excel/{divisi}")
+async def export_excel(divisi: str):
+    expenses = await db.expenses.find({"divisi": divisi, "is_deleted": False}, {"_id": 0}).to_list(1000)
+    budget = await db.division_budgets.find_one({"divisi": divisi}, {"_id": 0})
     budget_awal = budget["amount"] if budget else 0
+    total_pengeluaran = sum(exp["nominal"] for exp in expenses)
     
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Laporan Budget"
+    ws.title = f"{divisi}"
     
     # Header style
     header_fill = PatternFill(start_color="183623", end_color="183623", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True)
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
     
     # Title
-    ws['A1'] = "LAPORAN BUDGET"
+    ws['A1'] = f"LAPORAN BUDGET - {divisi}"
     ws['A1'].font = Font(size=16, bold=True)
     ws.merge_cells('A1:E1')
     
     ws['A2'] = f"Budget Awal: Rp {budget_awal:,.0f}".replace(",", ".")
-    ws.merge_cells('A2:E2')
+    ws['A3'] = f"Total Pengeluaran: Rp {total_pengeluaran:,.0f}".replace(",", ".")
+    ws['A4'] = f"Saldo Tersisa: Rp {budget_awal - total_pengeluaran:,.0f}".replace(",", ".")
     
     # Headers
     headers = ["Tanggal", "Nominal", "Kategori", "Keterangan", "Bukti"]
     for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=4, column=col, value=header)
+        cell = ws.cell(row=6, column=col, value=header)
         cell.fill = header_fill
         cell.font = header_font
+        cell.border = thin_border
     
     # Data
-    for idx, exp in enumerate(expenses, 5):
-        ws.cell(row=idx, column=1, value=exp["tanggal"])
-        ws.cell(row=idx, column=2, value=f"Rp {exp['nominal']:,.0f}".replace(",", "."))
-        ws.cell(row=idx, column=3, value=exp["kategori"])
-        ws.cell(row=idx, column=4, value=exp["keterangan"])
-        ws.cell(row=idx, column=5, value=exp["bukti_filename"] or "-")
+    for idx, exp in enumerate(expenses, 7):
+        ws.cell(row=idx, column=1, value=exp["tanggal"]).border = thin_border
+        ws.cell(row=idx, column=2, value=f"Rp {exp['nominal']:,.0f}".replace(",", ".")).border = thin_border
+        ws.cell(row=idx, column=3, value=exp["kategori"]).border = thin_border
+        ws.cell(row=idx, column=4, value=exp["keterangan"]).border = thin_border
+        ws.cell(row=idx, column=5, value=exp["bukti_filename"] or "-").border = thin_border
     
     # Total
-    total_row = len(expenses) + 5
-    ws.cell(row=total_row, column=1, value="TOTAL")
-    ws.cell(row=total_row, column=1).font = Font(bold=True)
-    total_pengeluaran = sum(exp["nominal"] for exp in expenses)
-    ws.cell(row=total_row, column=2, value=f"Rp {total_pengeluaran:,.0f}".replace(",", "."))
-    ws.cell(row=total_row, column=2).font = Font(bold=True)
+    total_row = len(expenses) + 7
+    ws.cell(row=total_row, column=1, value="TOTAL").font = Font(bold=True)
+    ws.cell(row=total_row, column=2, value=f"Rp {total_pengeluaran:,.0f}".replace(",", ".")).font = Font(bold=True)
     
     # Adjust column widths
     ws.column_dimensions['A'].width = 15
     ws.column_dimensions['B'].width = 20
     ws.column_dimensions['C'].width = 20
-    ws.column_dimensions['D'].width = 30
+    ws.column_dimensions['D'].width = 35
     ws.column_dimensions['E'].width = 30
     
     output = BytesIO()
@@ -356,13 +405,13 @@ async def export_excel():
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=laporan_budget.xlsx"}
+        headers={"Content-Disposition": f"attachment; filename=laporan_{divisi}.xlsx"}
     )
 
-@api_router.get("/export/pdf")
-async def export_pdf():
-    expenses = await db.expenses.find({"is_deleted": False}, {"_id": 0}).to_list(1000)
-    budget = await db.budgets.find_one({}, {"_id": 0})
+@api_router.get("/export/pdf/{divisi}")
+async def export_pdf(divisi: str):
+    expenses = await db.expenses.find({"divisi": divisi, "is_deleted": False}, {"_id": 0}).to_list(1000)
+    budget = await db.division_budgets.find_one({"divisi": divisi}, {"_id": 0})
     budget_awal = budget["amount"] if budget else 0
     total_pengeluaran = sum(exp["nominal"] for exp in expenses)
     
@@ -380,7 +429,7 @@ async def export_pdf():
         spaceAfter=30,
         alignment=1
     )
-    elements.append(Paragraph("LAPORAN BUDGET", title_style))
+    elements.append(Paragraph(f"LAPORAN BUDGET - {divisi}", title_style))
     elements.append(Spacer(1, 12))
     
     # Budget info
@@ -418,7 +467,7 @@ async def export_pdf():
     return StreamingResponse(
         buffer,
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=laporan_budget.pdf"}
+        headers={"Content-Disposition": f"attachment; filename=laporan_{divisi}.pdf"}
     )
 
 @app.on_event("startup")
