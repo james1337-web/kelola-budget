@@ -116,6 +116,9 @@ class ExpenseUpdate(BaseModel):
     nominal: Optional[float] = None
     kategori: Optional[str] = None
     keterangan: Optional[str] = None
+    divisi: Optional[str] = None
+    bukti_path: Optional[str] = None
+    bukti_filename: Optional[str] = None
 
 class DivisionStats(BaseModel):
     divisi: str
@@ -325,7 +328,7 @@ async def get_expense_stats(divisi: str):
             if len(date_parts) >= 2:
                 month_key = f"{date_parts[0]}-{date_parts[1]}"
                 monthly_data[month_key] = monthly_data.get(month_key, 0) + exp["nominal"]
-        except:
+        except (ValueError, KeyError, AttributeError):
             pass
     
     monthly = [MonthlyExpense(bulan=k, total=v) for k, v in sorted(monthly_data.items())]
