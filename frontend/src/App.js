@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '@/App.css';
 import axios from 'axios';
-import { Upload, FileText, Download, Plus, Edit, Trash2, TrendingUp, DollarSign } from 'lucide-react';
+import { Upload, FileText, Download, Plus, Edit, Trash2, TrendingUp, DollarSign, Smartphone } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,19 @@ import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('SW registered: ', registration);
+      })
+      .catch(registrationError => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
+}
 
 const formatRupiah = (amount) => {
   return new Intl.NumberFormat('id-ID', {
@@ -73,6 +86,41 @@ function App() {
     bukti_path: null,
     bukti_filename: null
   });
+
+  // PWA Install Prompt
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallButton(false);
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      toast.success('Aplikasi berhasil diinstall!');
+      setShowInstallButton(false);
+    }
+    
+    setDeferredPrompt(null);
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -286,6 +334,20 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F1]">
+      {/* PWA Install Button */}
+      {showInstallButton && (
+        <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-top">
+          <Button
+            data-testid="install-pwa-btn"
+            onClick={handleInstallClick}
+            className="bg-[#0F3D2E] text-white hover:bg-[#183623] rounded-lg shadow-lg px-4 py-2 flex items-center gap-2"
+          >
+            <Smartphone className="w-4 h-4" />
+            Install Aplikasi
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-[#FFFFFF] border-b border-[#D9D7CE] sticky top-0 z-50">
         <div className="max-w-full px-6 py-4">
