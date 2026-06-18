@@ -326,7 +326,7 @@ function App() {
   };
 
   const currentDivisionStats =
-  (dashboardStats?.divisions || []).find(
+  (dashboardStats?.divisions ?? []).find(
     d => d.divisi === activeTab
   ) || {
     budget_awal: 0,
