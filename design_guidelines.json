@@ -1,0 +1,75 @@
+{
+  "theme": "LIGHT",
+  "archetype": "1 (Organic & Earthy)",
+  "vibe": "The 'Botanical Ledger'. Blending the organic warmth of a botanical catalog with the strict, precise grids of an architectural blueprint. Breaking the generic 'SaaS dashboard' mold by eliminating soft shadows and rounded cards, replacing them with sharp 1px borders, paper-like backgrounds, and mono-spaced financial data.",
+  "colors": {
+    "background_page": "#F5F5F1",
+    "background_surface": "#FFFFFF",
+    "primary": "#183623",
+    "primary_hover": "#112618",
+    "accent_danger": "#D45B42",
+    "accent_danger_hover": "#B34A34",
+    "text_main": "#1E201E",
+    "text_muted": "#6E716A",
+    "border_grid": "#D9D7CE",
+    "success": "#2D5A3F",
+    "chart_palette": ["#183623", "#4A6B53", "#8A9F8D", "#D45B42", "#E8A392"]
+  },
+  "typography": {
+    "primary_pairing": "Cabinet Grotesk (Headings) + Manrope (Body) + IBM Plex Mono (Numbers/Metrics)",
+    "rules": "Never use Inter for headings. All financial numbers, dates, and metrics MUST use IBM Plex Mono for tabular alignment and architectural precision.",
+    "heading_h1": "font-['Cabinet_Grotesk'] text-4xl tracking-tight font-black text-[#1E201E]",
+    "heading_h2": "font-['Cabinet_Grotesk'] text-2xl tracking-tight font-bold text-[#1E201E]",
+    "metric_value": "font-['IBM_Plex_Mono'] text-3xl font-medium text-[#1E201E]",
+    "body_text": "font-['Manrope'] text-base leading-relaxed text-[#1E201E]",
+    "table_header": "font-['Manrope'] text-xs uppercase tracking-[0.2em] text-[#6E716A]"
+  },
+  "layout_and_spacing": {
+    "philosophy": "The 'Technical Grid'. Expose the skeleton. No floating cards. Use a border-collapse style layout where sections touch each other separated by 1px hard borders.",
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-0 border-t border-l border-[#D9D7CE]",
+    "card_style": "bg-[#FFFFFF] border-b border-r border-[#D9D7CE] p-6 lg:p-8 rounded-none shadow-none",
+    "metric_card": "col-span-1 md:col-span-2 lg:col-span-3 bg-[#FFFFFF] border-b border-r border-[#D9D7CE] p-6 lg:p-8 flex flex-col justify-between"
+  },
+  "components": {
+    "buttons": "Square or 2px radius. High contrast. Primary: bg-[#183623] text-white hover:-translate-y-[1px] transition-transform shadow-[4px_4px_0px_#D9D7CE] hover:shadow-[2px_2px_0px_#D9D7CE].",
+    "inputs": "Shadcn defaults completely stripped of radius. border-[#D9D7CE] rounded-none focus:ring-0 focus:border-[#183623] focus:border-b-2 bg-transparent.",
+    "tables": "Stripped down Shadcn table. No rounded corners. Header has border-b-2 border-[#183623]. Rows have border-b border-[#D9D7CE]. Data strictly left-aligned.",
+    "charts": "Recharts. Use crisp lines, no curved splines (step or linear only). Grid lines must match #D9D7CE. Tooltips must be square and strictly styled.",
+    "file_upload": "Dashed 1px border-[#183623] with bg-[#F5F5F1] p-8 text-center cursor-pointer hover:bg-[#EBEBE6] transition-colors."
+  },
+  "motion": {
+    "interactions": "Crisp and instant. Avoid long fades. Hover states use structural shifts (e.g., solid shadows shrinking).",
+    "transitions": "transition-all duration-150 ease-out"
+  },
+  "accessibility": {
+    "contrast": "Strict APCA/WCAG compliance. Dark green and burnt orange provide excellent readability against the paper background.",
+    "testing_attributes": "All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid='budget-input', data-testid='export-pdf-btn')."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "category": "user_avatar_placeholder",
+        "url": "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwyfHxwb3J0cmFpdCUyMHByb2Zlc3Npb25hbCUyMHNtaWxpbmd8ZW58MHx8fHwxNzgxODAzNTU1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Professional smiling woman avatar for top right profile"
+      },
+      {
+        "category": "login_background_texture",
+        "url": "https://images.unsplash.com/photo-1495476479092-6ece1898a101?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwbmF0dXJlJTIwdGV4dHVyZSUyMGxlYWZ8ZW58MHx8fHwxNzgxODAzNTU1fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Minimalist green leaf texture for optional auth/login screen background"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Build the dashboard (Laporan Budget) using React, Tailwind, and Shadcn UI.",
+    "Enforce the 'Botanical Ledger' design system: no rounded corners (rounded-none), visible grid structures, and no drop shadows except for the solid offset shadow on buttons.",
+    "Typography: Use Cabinet Grotesk for Headings, Manrope for Body, and IBM Plex Mono for ALL numeric data (balances, table amounts, dates). Import these via Google Fonts or Fontsource.",
+    "Dashboard Layout Setup: Use a wrapper with `max-w-7xl mx-auto border-l border-t border-[#D9D7CE] mt-10`. Inside, map the 4 summary metrics (Budget Awal, Total Pengeluaran, Saldo Tersisa, Persentase Budget Terpakai).",
+    "Auto calculations: Saldo Tersisa = Budget Awal - Total Pengeluaran. Persentase = (Total Pengeluaran / Budget Awal) * 100.",
+    "Language: Entirely in Indonesian. Format currencies properly using 'Rp' and standard Indonesian delimiters (e.g., Rp 1.500.000).",
+    "Main Content area: 2 columns. Left: Charts (Monthly bar chart and Category pie chart) + History Table. Right: 'Tambah Pengeluaran' form.",
+    "Form requirements: Tanggal (Datepicker), Nominal (Number/IDR), Kategori (Select), Keterangan (Text input), Upload bukti pembayaran (File dropzone).",
+    "Table requirements: Display history with Edit and Hapus actions. Use Shadcn table.",
+    "Include Export buttons (Excel & PDF) in the table header or page header area. Use libraries like xlsx and jspdf.",
+    "CRITICAL: Include `data-testid` on every form input, button, and table row for automated testing."
+  ]
+}
