@@ -377,15 +377,15 @@ function App() {
         <div className="max-w-full grid grid-cols-1 md:grid-cols-3 gap-6">
           <div data-testid="summary-total-budget" className="text-center">
             <div className="font-['Manrope'] text-xs uppercase tracking-[0.2em] text-[#6E716A] mb-2">Total Budget Semua Divisi</div>
-            <div className="metric-value text-2xl font-semibold text-[#1E201E]">{formatRupiah(dashboardStats.total_budget)}</div>
+            <div className="metric-value text-2xl font-semibold text-[#1E201E]">{formatRupiah(Number(dashboardStats.total_budget) || 0)}</div>
           </div>
           <div data-testid="summary-total-pengeluaran" className="text-center">
             <div className="font-['Manrope'] text-xs uppercase tracking-[0.2em] text-[#6E716A] mb-2">Total Pengeluaran Semua Divisi</div>
-            <div className="metric-value text-2xl font-semibold text-[#D45B42]">{formatRupiah(dashboardStats.total_pengeluaran)}</div>
+            <div className="metric-value text-2xl font-semibold text-[#D45B42]">{formatRupiah(Number(dashboardStats.total_pengeluaran) || 0)}</div>
           </div>
           <div data-testid="summary-total-saldo" className="text-center">
             <div className="font-['Manrope'] text-xs uppercase tracking-[0.2em] text-[#6E716A] mb-2">Total Saldo Tersisa</div>
-            <div className="metric-value text-2xl font-semibold text-[#2D5A3F]">{formatRupiah(dashboardStats.total_saldo)}</div>
+            <div className="metric-value text-2xl font-semibold text-[#2D5A3F]">{formatRupiah(Number(dashboardStats.total_saldo) || 0)}</div>
           </div>
         </div>
       </div>
