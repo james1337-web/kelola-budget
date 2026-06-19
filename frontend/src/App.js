@@ -517,7 +517,7 @@ function App() {
                               <TableCell colSpan={6} className="text-center text-[#6E716A] py-8">Belum ada data pengeluaran</TableCell>
                             </TableRow>
                           ) : (
-                            expenses.map((expense) => (
+                            (expenses ?? []).map((expense) => (
                               <TableRow key={expense.id} data-testid={`expense-row-${expense.id}`} className="border-b border-[#D9D7CE] hover:bg-[#F5F5F1]">
                                 <TableCell className="table-number">{expense.tanggal}</TableCell>
                                 <TableCell className="table-number font-medium">{formatRupiah(expense.nominal)}</TableCell>
