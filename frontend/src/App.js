@@ -464,9 +464,9 @@ function App() {
                             outerRadius={70}
                             label={(entry) => entry.kategori}
                           >
-                            {categoryData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                            ))}
+                            {(categoryData ?? []).map((entry, index) => (
+  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+))}
                           </Pie>
                           <Tooltip formatter={(value) => formatRupiah(value)} />
                         </PieChart>
